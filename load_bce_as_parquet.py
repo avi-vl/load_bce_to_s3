@@ -8,9 +8,10 @@ from urllib.parse import quote_plus
 import sqlalchemy as db
 import re
 import os
+import dask.dataframe as da
 
 s3_bucket = os.getenv('S3_BUCKET')
-chunksize = 10000000
+chunksize = 5000000
 
 
 def get_table_structure():
@@ -23,7 +24,7 @@ def get_table_structure():
 
     conn_url = f"mysql+mysqldb://" \
                f"{username}:{pwd}@{server}:{port}/{database}"
-    engine = db.create_engine(conn_url)
+    engine = db.create_engine(conn_url, pool_size=20)
 
     print('Connected to ', conn_url)
 
@@ -43,11 +44,12 @@ def get_table_structure():
     )
 
 
-def create_parquet_file(sql_query, engine, file_name, organisation_id, report_id, database_name):
+def create_parquet_file(sql_query, engine, file_name, organisation_id,
+                        report_id, database_name):
     # store the results of the SQL query as dataframe
 
     start_time = time.process_time()
-    iterator = pd.read_sql_query(
+    df = pd.read_sql_query(
         sql_query,
         engine,
         coerce_float=True,
@@ -62,21 +64,29 @@ def create_parquet_file(sql_query, engine, file_name, organisation_id, report_id
           )
     # loop over the iterable object created
 
+    #df.to_parquet('publication_table.parquet')
     start_time = time.process_time()
-    for i, df in enumerate(iterator):
-        #     print(row.sum(axis = 0, skipna = True))
-        # create a pyarrow table from the dataframe object
-        table = pa.Table.from_pandas(df, preserve_index=False)
-        # print('table created.')
+    ddf = da.from_pandas(df, chunksize=5000000)
+    ddf.to_parquet(
+        path='/',
+        engine='pyarrow',
+    )
 
-        # create a parquet write object giving it an output file
-        # pqwriter = pq.ParquetWriter(
-        #     '/{}'.format(file_name),
-        #     table.schema,
-        #     compression='snappy'
-        # )
-        # pqwriter.write_table(table)
-        df.to_parquet('publication_table.parquet')
+    # start_time = time.process_time()
+    # for i, df in enumerate(iterator):
+    #     #     print(row.sum(axis = 0, skipna = True))
+    #     # create a pyarrow table from the dataframe object
+    #     table = pa.Table.from_pandas(df, preserve_index=False)
+    #     # print('table created.')
+    #
+    #     # create a parquet write object giving it an output file
+    #     # pqwriter = pq.ParquetWriter(
+    #     #     '/{}'.format(file_name),
+    #     #     table.schema,
+    #     #     compression='snappy'
+    #     # )
+    #     # pqwriter.write_table(table)
+    #     df.to_parquet('publication_table.parquet')
 
     print('Successful write')
     end_time = time.process_time()
@@ -116,7 +126,8 @@ def create_parquet_file(sql_query, engine, file_name, organisation_id, report_id
 
     os.remove('/{}'.format(file_name))
 
-    s3_data_url = 's3://{}/{}/{}/'.format(s3_bucket, organisation_id, str(report_id))
+    s3_data_url = 's3://{}/{}/{}/'.format(s3_bucket, organisation_id,
+                                          str(report_id))
     s3_url = 's3://' + s3_bucket + '/athena_query/'
     table_name = 'q{}'.format(report_id)
 
@@ -176,6 +187,7 @@ def connect_with_athena(database_name, s3_url):
     connection = engine.connect()
 
     return connection
+
 
 if __name__ == "__main__":
     get_table_structure()
