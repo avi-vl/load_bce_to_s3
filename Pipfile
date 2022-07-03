@@ -8,6 +8,8 @@ boto3 = "*"
 pyarrow = "*"
 sqlalchemy = "*"
 pandas = "*"
+dask = "*"
+mysqlclient = "*"
 
 [dev-packages]
 
