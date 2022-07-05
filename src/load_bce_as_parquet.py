@@ -12,8 +12,10 @@ import dask.dataframe as da
 
 from athena import connect_with_athena, create_athena_table, \
     drop_athena_table, create_athena_database
-from constants import STDOUT, STDERR, S3_BUCKET, CHUNKSIZE, REGEX_PATERN, table_name
+from constants import STDOUT, STDERR, CHUNKSIZE, REGEX_PATERN, table_name
 from sql_queries import sql_query
+from tables import query_schema
+from utils import convert_types, export_parquet_to_s3
 
 
 
@@ -28,10 +30,7 @@ def main():
                f"{username}:{pwd}@{server}:{port}/{database}"
     engine = db.create_engine(conn_url, pool_size=20)
 
-    STDOUT.write(f"Connected to: {conn_url}")
-
-    # hard code for testing purposes only
-    table_name = "post"
+    STDOUT.write(f"Connected to: {conn_url}\n")
 
     create_parquet_file(
         sql_query,
@@ -53,21 +52,35 @@ def create_parquet_file(sql_query, engine, file_name, organisation_id,
     for chunk in pd.read_sql_query(sql_query, engine, coerce_float=True, chunksize=CHUNKSIZE):
         chunks.append(chunk)
     df = pd.concat(list(chunks))
-    STDOUT.write(f"Building iterator of chunksize {CHUNKSIZE} took: "
-          f"({time.process_time()} - {start_time_iterator}) s")
 
-    #df.to_parquet('publication_table.parquet')
+    STDOUT.write(f"Building iterator of chunksize {CHUNKSIZE} took (s): "
+                 f"{time.process_time() - start_time_iterator}\n")
+
+    schema = query_schema.get(report_id)[0]
+    pyarrow_schema = query_schema.get(report_id)[1]
+
+    # TODO: only to determine the dtypes of the df
+    result = df.dtypes
+    print(result)
+
+    df = convert_types(df, df_schema=schema)
+
     start_time_parquet = time.process_time()
     ddf = da.from_pandas(df, chunksize=5000000)
-    ddf.to_parquet(
-        path='/',
-        engine='pyarrow',
-    )
 
-    STDOUT.write("Successful write")
+    export_parquet_to_s3(df=ddf,
+                         pyarrow_schema=pyarrow_schema,
+                         table_name=report_id)
+
     STDOUT.write(f'Parquet file built in (s): '
-                 f'({time.process_time()} - {start_time_parquet})')
+                 f'{time.process_time() - start_time_parquet}')
 
+
+def upload_parquet_to_s3():
+    """
+
+    :return:
+    """
     columns = []
     types = []
     for x in table.schema:
