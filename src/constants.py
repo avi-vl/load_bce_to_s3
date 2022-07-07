@@ -1,4 +1,3 @@
-import os
 import sys
 
 STDOUT = sys.stdout
@@ -11,4 +10,4 @@ S3_STAGING_BUCKET = "bi-visable-input"
 S3_STAGING_PREFIX = "bce/"
 
 # hard coded for testing purposes only
-table_name = "post"
+table_name = "publication"

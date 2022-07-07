@@ -25,6 +25,36 @@ post_schema = {
     },
 }
 
+publication_schema = {
+    'str': {
+        'columns': [
+            'tpu_id', 'S_ID', 'IDTIERS', 'ICODE', 'TCODE',
+            'PUB_S_ID_TIERS', 'PUB_U_ID_TIERS',
+        ],
+        'type': str,
+    },
+    'int': {
+        'columns': [
+            'PUB_ID', 'CMP_ID', 'OFF_ID', 'SPU_ID', 'PUB_WEB_PRIORITE',
+        ],
+        'type': int,
+    },
+    'float': {
+        'columns': [
+            'EDITION', 'CTR_ID',
+        ],
+        'type': float,
+    },
+    'date': {
+        'columns': [
+            'PUB_DT_CREATION', 'PUB_DT_DEBUT', 'PUB_DT_FIN', 'PUB_DT_COMPLETE',
+            'PUB_DT_DEBUT_VERSION', 'PUB_DT_FIN_VERSION', 'PUB_DT_ENVOI_WEB',
+            'PUB_DT_RETOUR_WEB',
+        ],
+        'type': 'datetime64[D]'
+    },
+}
+
 
 def get_pyarrow_schema(schema: Dict[str, object]) -> pa.Schema:
     """
@@ -51,6 +81,10 @@ query_schema = {
     "post": (
         post_schema,
         get_pyarrow_schema(post_schema)
+    ),
+    "publication": (
+        publication_schema,
+        get_pyarrow_schema(publication_schema)
     ),
 }
 
