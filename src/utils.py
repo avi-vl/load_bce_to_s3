@@ -63,6 +63,7 @@ def export_parquet_to_s3(
         use_deprecated_int96_timestamps=True,
         allow_truncated_timestamps=True,
         coerce_timestamps="ms",
+        compression="gzip"
     )
 
     if response is not None:
