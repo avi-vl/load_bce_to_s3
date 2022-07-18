@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import awswrangler as wr
 import pandas as pd
 import pyarrow as pa
 
@@ -46,27 +47,35 @@ def convert_types(df: pd.DataFrame, df_schema: dict) -> pd.DataFrame:
 
 def export_parquet_to_s3(
         df: pd.DataFrame,
-        pyarrow_schema: pa.Schema,
         bucket: str = S3_STAGING_BUCKET,
         prefix: str = S3_STAGING_PREFIX,
         table_name: str = None,
 ) -> None:
+    databases = wr.catalog.databases()
+
+    if "bce_glue" not in databases.values:
+        wr.catalog.create_database("bce_glue")
+        STDOUT.write(wr.catalog.databases())
+    else:
+        STDERR.write("Database bce_glue already exists\n")
+
+    a = wr.catalog.tables(database="bce_glue")
 
     date = datetime.now().strftime("%Y/%m/%d")
-    path = f"s3://{bucket}/{prefix}{table_name}/{date}"
-    STDOUT.write(f'Exporting to path "{path}"\n')
+    p = f"s3://{bucket}/{prefix}{table_name}/{date}"
 
-    response = df.to_parquet(
-        path=path,
-        engine="pyarrow",
-        schema=pyarrow_schema,
-        use_deprecated_int96_timestamps=True,
-        allow_truncated_timestamps=True,
-        coerce_timestamps="ms",
-        compression="gzip"
+    # writing df to Data Lake (S3 + Parquet + Glue Catalog)
+    response = wr.s3.to_parquet(
+        df=df,
+        path=f"s3://{bucket}/{prefix}{table_name}/{date}",
+        dataset=True,
+        database="bce_glue",
+        table=table_name,
+        mode="overwrite"
     )
 
     if response is not None:
-        STDERR.write(response + "\n")
+        STDERR.write(f"Response from to_parquet: {response}\n")
+
 
 

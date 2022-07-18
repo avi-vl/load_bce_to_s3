@@ -11,6 +11,7 @@ pandas = "*"
 dask = "*"
 mysqlclient = "*"
 s3fs = "*"
+awswrangler = "*"
 
 [dev-packages]
 
