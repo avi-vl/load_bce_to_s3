@@ -33,7 +33,7 @@ class BceConnection:
         return engine
 
 
-    def bce_close_connection(self, engine):
+    def bce_close_connection(self, engine) -> None:
         """Close a connection to Europages' BCE database.
 
         :param engine: sqlalchemy connection to BCE

@@ -10,4 +10,4 @@ S3_STAGING_BUCKET = "bi-visable-input"
 S3_STAGING_PREFIX = "bce_test/"
 
 # hard coded for testing purposes only
-table_name = "publication"
+table_name = "post"

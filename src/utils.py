@@ -3,10 +3,13 @@ from datetime import datetime
 import awswrangler as wr
 import pandas as pd
 
-from constants import STDERR, S3_STAGING_BUCKET, S3_STAGING_PREFIX, CHUNKSIZE
+from constants import STDERR, STDOUT, S3_STAGING_BUCKET, S3_STAGING_PREFIX, CHUNKSIZE
 
 
-def retrieve_chunks(sql_query, engine):
+def retrieve_chunks(
+        sql_query: str,
+        engine: "sqlalchemy.engine.Engine",
+) -> list:
     """
 
     :param sql_query:
@@ -26,13 +29,13 @@ def export_parquet_to_s3(
         prefix: str = S3_STAGING_PREFIX,
         table_name: str = None,
 ) -> None:
-    """
+    """Export DF as parquet file to S3
 
-    :param df:
-    :param bucket:
-    :param prefix:
-    :param table_name:
-    :return:
+    :param df: datframe
+    :param bucket: dedicated bucket to use
+    :param prefix: prefix (object) of the S3 bucket
+    :param table_name: table name to retrieve data from
+    :return: None
     """
     date = datetime.now().strftime("%Y/%m/%d")
 
@@ -44,8 +47,10 @@ def export_parquet_to_s3(
         mode="overwrite"
     )
 
-    if response is not None:
-        STDERR.write(f"Response from to_parquet: {response}\n")
+    STDOUT.write(f"Response from to_parquet: {response}\n")
+
+    if response is None:
+        STDERR.write(f"Response returned back None\n")
 
 
 
